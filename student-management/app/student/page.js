@@ -1,112 +1,328 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
+
 export default function StudentDashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // ==========================
+  // GET STUDENT PROFILE
+  // ==========================
+  const getStudentProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:5000/api/student/me",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(
+          data.message || "Unable to load student profile."
+        );
+        setLoading(false);
+        return;
+      }
+
+      setStudent(data.student);
+    } catch (error) {
+      console.log("Student Profile Error:", error);
+      setError("Unable to connect to server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================
+  // LOAD DATA
+  // ==========================
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      router.push("/login");
-      return;
-    }
-    const currentUser = JSON.parse(storedUser);
-    if (currentUser.role !== "student") {
-      router.push("/admin");
-      return;
-    }
-    setUser(currentUser);
-  }, [router]);
+    getStudentProfile();
+  }, []);
+
+  // ==========================
+  // LOGOUT
+  // ==========================
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    router.push("/login");
+    window.location.href = "/login";
   };
-  if (!user) {
+
+  // ==========================
+  // LOADING
+  // ==========================
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">
-          Loading...
-        </p>
-      </div>
+      <main className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+
+          <p className="mt-4 text-slate-600">
+            Loading your profile...
+          </p>
+
+        </div>
+      </main>
     );
   }
-  return (
-    <main className="min-h-screen bg-slate-100">
-      <nav className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">
-              🎓 Student Management
-            </h1>
-            <p className="text-sm text-slate-500">
-              Student Dashboard
-            </p>
+
+  // ==========================
+  // ERROR
+  // ==========================
+  if (error) {
+    return (
+      <main className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
+
+        <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-8 text-center max-w-md w-full">
+
+          <div className="text-5xl mb-4">
+            ⚠️
           </div>
+
+          <h2 className="text-2xl font-bold text-slate-800">
+            Unable to Load Profile
+          </h2>
+
+          <p className="text-red-600 mt-3">
+            {error}
+          </p>
+
           <button
             onClick={logout}
-            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-medium transition"
+            className="mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition"
           >
-            Logout
+            Back to Login
           </button>
+
         </div>
-      </nav>
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
-          <div className="text-5xl mb-4">
-            👋
+
+      </main>
+    );
+  }
+
+  
+       return (
+  <main className="min-h-screen bg-slate-100">
+        
+
+        <nav className="bg-white border-b border-slate-200">
+
+          <div className="max-w-6xl mx-auto px-6 py-5">
+
+            <div className="flex items-center justify-between">
+
+              {/* LOGO */}
+
+              <div className="flex items-center gap-3">
+
+                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-2xl">
+                  🎓
+                </div>
+
+                <div>
+
+                  <h1 className="text-xl font-bold text-slate-800">
+                    Student Portal
+                  </h1>
+
+                  <p className="text-sm text-slate-500">
+                    Student Dashboard
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* LOGOUT */}
+
+              <button
+                onClick={logout}
+                className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition"
+              >
+                Logout
+              </button>
+
+            </div>
+
           </div>
-          <p className="text-sm text-slate-500">
-            Welcome
-          </p>
-          <h2 className="text-3xl font-bold text-slate-800">
-            {user.name}
-          </h2>
-          <p className="text-slate-500 mt-2">
-            Welcome to your student dashboard.
-          </p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">
-            My Account
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-slate-50 rounded-xl p-5">
-              <p className="text-sm text-slate-500">
-                Full Name
-              </p>
-              <p className="text-lg font-semibold text-slate-800 mt-1">
-                {user.name}
-              </p>
+
+        </nav>
+
+        {/* ==========================
+            CONTENT
+        ========================== */}
+
+        <div className="max-w-6xl mx-auto px-6 py-10">
+
+          {/* ==========================
+              WELCOME CARD
+          ========================== */}
+
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white mb-8">
+
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5">
+
+              {/* AVATAR */}
+
+              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl">
+
+                {student?.name
+                  ?.charAt(0)
+                  .toUpperCase()}
+
+              </div>
+
+              {/* WELCOME TEXT */}
+
+              <div className="text-center sm:text-left">
+
+                <p className="text-blue-100 text-sm">
+                  Welcome back
+                </p>
+
+                <h2 className="text-3xl font-bold mt-1">
+                  {student?.name}
+                </h2>
+
+                <p className="text-blue-100 mt-1">
+                  Student ID: {student?.studentId}
+                </p>
+
+              </div>
+
             </div>
-            <div className="bg-slate-50 rounded-xl p-5">
-              <p className="text-sm text-slate-500">
-                Email
+
+          </div>
+
+          {/* ==========================
+              PROFILE
+          ========================== */}
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+            <div className="p-6 border-b border-slate-200">
+
+              <h2 className="text-2xl font-bold text-slate-800">
+                My Profile
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                Your registered student information
               </p>
-              <p className="text-lg font-semibold text-slate-800 mt-1">
-                {user.email}
-              </p>
+
             </div>
-            <div className="bg-slate-50 rounded-xl p-5">
-              <p className="text-sm text-slate-500">
-                Account Type
-              </p>
-              <p className="text-lg font-semibold text-blue-600 mt-1 capitalize">
-                {user.role}
-              </p>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              {/* STUDENT ID */}
+
+              <div className="bg-slate-50 rounded-xl p-5">
+
+                <p className="text-sm text-slate-500">
+                  Student ID
+                </p>
+
+                <p className="text-xl font-bold text-blue-600 mt-2">
+                  {student?.studentId}
+                </p>
+
+              </div>
+
+              {/* NAME */}
+
+              <div className="bg-slate-50 rounded-xl p-5">
+
+                <p className="text-sm text-slate-500">
+                  Full Name
+                </p>
+
+                <p className="text-xl font-bold text-slate-800 mt-2">
+                  {student?.name}
+                </p>
+
+              </div>
+
+              {/* EMAIL */}
+
+              <div className="bg-slate-50 rounded-xl p-5">
+
+                <p className="text-sm text-slate-500">
+                  Email Address
+                </p>
+
+                <p className="text-lg font-semibold text-slate-800 mt-2 break-all">
+                  {student?.email}
+                </p>
+
+              </div>
+
+              {/* COURSE */}
+
+              <div className="bg-slate-50 rounded-xl p-5">
+
+                <p className="text-sm text-slate-500">
+                  Course
+                </p>
+
+                <p className="text-xl font-bold text-slate-800 mt-2">
+                  {student?.course}
+                </p>
+
+              </div>
+
             </div>
-            <div className="bg-slate-50 rounded-xl p-5">
-              <p className="text-sm text-slate-500">
-                Account Status
-              </p>
-              <p className="text-lg font-semibold text-green-600 mt-1">
+
+          </div>
+
+          {/* ==========================
+              ACCOUNT STATUS
+          ========================== */}
+
+          <div className="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+
+            <h2 className="text-xl font-bold text-slate-800">
+              Account Status
+            </h2>
+
+            <div className="flex items-center gap-3 mt-4">
+
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+
+              <span className="text-green-600 font-semibold">
                 Active
-              </p>
+              </span>
+
             </div>
+
+            <p className="text-sm text-slate-500 mt-2">
+              Your student account is active and managed by the administrator.
+            </p>
+
           </div>
+
         </div>
-      </div>
-    </main>
+
+      </main>
+
+    
   );
 }
